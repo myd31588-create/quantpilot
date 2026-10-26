@@ -1,5 +1,8 @@
 # QuantPilot · A 股多因子选股与回测
 
+[![CI](https://github.com/myd31588-create/quantpilot/actions/workflows/ci.yml/badge.svg)](https://github.com/myd31588-create/quantpilot/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 > **仅供学习研究，不构成任何投资建议，不提供选股服务。**
 
 用 Java 实现的多因子选股 + 事件驱动回测框架，**外加一个市面上没有的东西：回测体检**。
