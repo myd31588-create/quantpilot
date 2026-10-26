@@ -5,7 +5,9 @@ out/
 *.log
 .DS_Store
 
-# 真实行情数据不进仓库（版权 + 体积）
-data/
+# 行情数据目录只忽略仓库根下那一个。
+# 注意必须写成 /data/：不带斜杠的 data/ 会匹配任意层级的 data 目录，
+# 把 src/main/java/com/quantpilot/data/ 这个 Java 包一起忽略掉。
+/data/
 *.csv
 !samples/*.csv
