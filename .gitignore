@@ -1,0 +1,11 @@
+target/
+out/
+.idea/
+*.iml
+*.log
+.DS_Store
+
+# 真实行情数据不进仓库（版权 + 体积）
+data/
+*.csv
+!samples/*.csv

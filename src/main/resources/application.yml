@@ -1,0 +1,15 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: quantpilot
+  main:
+    banner-mode: off
+  thymeleaf:
+    check-template-location: false
+
+logging:
+  level:
+    root: warn
+    com.quantpilot: info

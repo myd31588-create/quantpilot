@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>QuantPilot · A 股多因子选股回测</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+            background: #f5f7fa;
+            color: #1f2329;
+        }
+        header { background: #14304f; color: #fff; padding: 18px 28px; }
+        header h1 { margin: 0; font-size: 20px; letter-spacing: 1px; }
+        header p { margin: 5px 0 0; font-size: 13px; opacity: .82; }
+        main { max-width: 1080px; margin: 20px auto 60px; padding: 0 16px; display: grid; gap: 16px; }
+        .panel { background: #fff; border: 1px solid #e5e8ef; border-radius: 8px; padding: 16px 18px; }
+        .panel h2 {
+            margin: 0 0 12px; font-size: 15px; color: #14304f;
+            border-left: 3px solid #14304f; padding-left: 8px;
+        }
+        .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .card { background: #fafbfc; border: 1px solid #eef0f4; border-radius: 6px; padding: 12px 14px; }
+        .card .k { font-size: 12px; color: #6b7280; }
+        .card .v { font-size: 20px; font-weight: 600; margin-top: 4px; }
+        .up { color: #c62828; }
+        .down { color: #0a7b3e; }
+        .meta { font-size: 12px; color: #6b7280; margin: 0; line-height: 1.9; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid #eef0f4; }
+        th { color: #6b7280; font-weight: 600; background: #fafbfc; }
+        .mono { font-family: Consolas, Menlo, monospace; font-size: 12px; }
+        .disclaimer {
+            font-size: 12px; color: #8a6d3b; background: #fff8e6;
+            border: 1px solid #f2e2b8; border-radius: 6px; padding: 10px 12px; line-height: 1.7;
+        }
+        .chart { width: 100%; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>QuantPilot</h1>
+    <p>A 股多因子选股与回测 · 仅供学习研究，不构成任何投资建议
+        ｜ <a href="/audit" style="color:#cfe0f5">回测体检报告 →</a></p>
+</header>
+
+<main>
+    <div class="disclaimer">
+        <b>数据说明</b>：本页使用<b>合成的模拟行情</b>（随机游走生成），不代表任何真实股票，也不含真实市场中的因子收益。
+        收益为正或为负都属正常——这里验证的是<b>回测流程与成本建模是否成立</b>。
+    </div>
+
+    <section class="panel">
+        <h2>回测概览</h2>
+        <div class="cards">
+            <div class="card">
+                <div class="k">累计收益</div>
+                <div class="v" th:classappend="${up} ? 'up' : 'down'">
+                    <span th:text="${totalReturnPct}"></span>%
+                </div>
+            </div>
+            <div class="card">
+                <div class="k">年化收益</div>
+                <div class="v" th:classappend="${up} ? 'up' : 'down'">
+                    <span th:text="${annualReturnPct}"></span>%
+                </div>
+            </div>
+            <div class="card">
+                <div class="k">夏普比率</div>
+                <div class="v" th:text="${sharpe}"></div>
+            </div>
+            <div class="card">
+                <div class="k">最大回撤</div>
+                <div class="v down"><span th:text="${mddPct}"></span>%</div>
+            </div>
+        </div>
+        <p class="meta" style="margin-top:12px">
+            策略：<span th:text="${strategy}"></span><br>
+            区间：<span th:text="${start}"></span> ~ <span th:text="${end}"></span>
+            ｜ 股票池 <span th:text="${stockCount}"></span> 只
+            ｜ 每月调仓，Top 10
+            ｜ 调仓 <span th:text="${rebalanceCount}"></span> 次，成交 <span th:text="${tradeCount}"></span> 笔
+            ｜ 年化波动 <span th:text="${volPct}"></span>%
+            ｜ 日胜率 <span th:text="${winRatePct}"></span>%
+        </p>
+    </section>
+
+    <section class="panel">
+        <h2>净值曲线</h2>
+        <div class="chart" th:utext="${chart}"></div>
+    </section>
+
+    <section class="panel">
+        <h2>最新持仓（Top 10）</h2>
+        <table>
+            <thead>
+            <tr>
+                <th style="width:90px">代码</th>
+                <th style="width:110px">名称</th>
+                <th style="width:90px">行业</th>
+                <th style="width:100px">最新价</th>
+                <th style="width:120px">近 20 日</th>
+                <th>成交额（万元）</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="h : ${holdings}">
+                <td class="mono" th:text="${h.code}"></td>
+                <td th:text="${h.name}"></td>
+                <td th:text="${h.industry}"></td>
+                <td class="mono" th:text="${#numbers.formatDecimal(h.close,1,2)}"></td>
+                <td class="mono" th:classappend="${h.ret20 >= 0} ? 'up' : 'down'"
+                    th:text="${#numbers.formatDecimal(h.ret20*100,1,2)}+'%'"></td>
+                <td class="mono" th:text="${#numbers.formatDecimal(h.amount,0,0)}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="panel">
+        <h2>最近调仓</h2>
+        <table>
+            <thead>
+            <tr>
+                <th style="width:130px">日期</th>
+                <th style="width:100px">成交笔数</th>
+                <th>选入</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="r : ${rebalances}">
+                <td th:text="${r.date}"></td>
+                <td th:text="${r.traded}"></td>
+                <td class="mono" th:text="${r.pickedText}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>QuantPilot · 回测体检报告</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+            background: #f5f7fa; color: #1f2329;
+        }
+        header { background: #14304f; color: #fff; padding: 18px 28px; }
+        header h1 { margin: 0; font-size: 20px; letter-spacing: 1px; }
+        header p { margin: 5px 0 0; font-size: 13px; opacity: .82; }
+        header a { color: #cfe0f5; font-size: 13px; text-decoration: none; }
+        main { max-width: 980px; margin: 20px auto 60px; padding: 0 16px; display: grid; gap: 16px; }
+        .panel { background: #fff; border: 1px solid #e5e8ef; border-radius: 8px; padding: 16px 18px; }
+        .score-box { display: flex; align-items: center; gap: 22px; }
+        .score {
+            font-size: 52px; font-weight: 700; line-height: 1;
+        }
+        .score.ok { color: #1a7f4b; }
+        .score.bad { color: #c62828; }
+        .score-sub { font-size: 13px; color: #6b7280; line-height: 1.9; }
+        .check {
+            display: grid; grid-template-columns: 150px 70px 1fr; gap: 12px;
+            padding: 14px 0; border-bottom: 1px solid #eef0f4; align-items: start;
+        }
+        .check:last-child { border-bottom: 0; }
+        .name { font-weight: 600; font-size: 14px; }
+        .tag {
+            display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 4px;
+            text-align: center; font-weight: 600;
+        }
+        .tag-PASS { background: #e7f5ec; color: #1a7f4b; }
+        .tag-WARN { background: #fff4e5; color: #b26a00; }
+        .tag-FAIL { background: #fdecea; color: #c62828; }
+        .detail { font-size: 13px; color: #374151; line-height: 1.8; }
+        .advice { font-size: 12px; color: #6b7280; margin-top: 4px; line-height: 1.7; }
+        .intro { font-size: 13px; color: #4b5563; line-height: 1.9; }
+        .intro b { color: #14304f; }
+        .warn-note {
+            font-size: 12px; color: #8a6d3b; background: #fff8e6;
+            border: 1px solid #f2e2b8; border-radius: 6px; padding: 10px 12px; line-height: 1.7;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>回测体检报告</h1>
+    <p>A 股多因子选股与回测 · <a href="/">← 返回回测结果</a></p>
+</header>
+
+<main>
+    <div class="panel">
+        <div class="score-box">
+            <div>
+                <div class="score" th:classappend="${report.healthy()} ? 'ok' : 'bad'"
+                     th:text="${report.score}">0</div>
+                <div class="score-sub" th:text="${report.healthy()} ? '可信' : '需要警惕'"></div>
+            </div>
+            <div class="intro">
+                这个分数不评价"赚多少"，只评价<b>这个回测结果值不值得信</b>。<br>
+                五项检查分别对应一种典型的自欺欺人：偷看未来、运气伪装成能力、参数过拟合、
+                忽略交易成本、样本里只有活着的股票。
+            </div>
+        </div>
+    </div>
+
+    <div class="warn-note">
+        <b>关于当前结果</b>：页面跑在<b>模拟数据</b>上，本来就没有真实 alpha，
+        所以体检给出"不通过"是预期的——这恰好说明体检工具能正确抓到问题。
+        换成真实行情后，同一套检查才有决策意义。
+    </div>
+
+    <div class="panel">
+        <div class="check" th:each="c : ${report.checks}">
+            <div class="name" th:text="${c.name}"></div>
+            <div>
+                <span class="tag" th:classappend="'tag-' + ${c.status}"
+                      th:text="${c.status}"></span>
+            </div>
+            <div>
+                <div class="detail" th:text="${c.detail}"></div>
+                <div class="advice" th:text="${c.advice}"></div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>
