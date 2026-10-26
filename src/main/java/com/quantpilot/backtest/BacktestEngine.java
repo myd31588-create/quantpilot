@@ -131,15 +131,20 @@ public class BacktestEngine {
         for (String code : buyable) {
             Bar bar = data.series(code).asOf(date).barOn(date);
             double price = bar.open() * (1 + cfg.slippage());
-            long shares = (long) Math.floor(perStock / price / LOT_SIZE) * LOT_SIZE;
+
+            // 按预算算手数，再逐手回退直到"含手续费也买得起"。
+            // 早期版本这里是算完手数后直接 continue，导致"差一点点钱"的仓位被静默跳过，
+            // 现金闲置、仓位不足，回测结果失真。
+            double budget = Math.min(perStock, cash.value);
+            long shares = (long) Math.floor(budget / price / LOT_SIZE) * LOT_SIZE;
+            while (shares > 0 && shares * price + buyFee(shares * price, cfg) > cash.value) {
+                shares -= LOT_SIZE;
+            }
             if (shares <= 0) {
                 continue;
             }
             double amount = price * shares;
-            double fee = Math.max(cfg.minCommission(), amount * cfg.commissionRate());
-            if (amount + fee > cash.value) {
-                continue;
-            }
+            double fee = buyFee(amount, cfg);
             cash.value -= amount + fee;
             holdings.merge(code, shares, Long::sum);
             trades.add(new Trade(date, code, Trade.Side.BUY, round2(price), shares, round2(amount), round2(fee)));
@@ -149,6 +154,10 @@ public class BacktestEngine {
     }
 
     // ---------- 涨跌停判断 ----------
+
+    private static double buyFee(double amount, BacktestConfig cfg) {
+        return Math.max(cfg.minCommission(), amount * cfg.commissionRate());
+    }
 
     private boolean isLimitUp(BarSeries s, Bar bar, double limitPct) {
         Double prev = prevClose(s);

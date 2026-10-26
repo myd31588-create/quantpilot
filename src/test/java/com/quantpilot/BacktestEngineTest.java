@@ -75,10 +75,24 @@ class BacktestEngineTest {
         BacktestResult r = run(data, List.of("600001"), costs());
 
         assertFalse(r.nav().isEmpty());
-        assertEquals(1.0, r.nav().get(0).nav(), 1e-9);
+        // 首日建仓要扣手续费和滑点，所以净值会略低于 1——不能断言恰好等于 1
+        assertEquals(1.0, r.nav().get(0).nav(), 0.01, "首日净值应接近 1（仅差手续费与滑点）");
         assertTrue(r.rebalances().size() >= 3, "1–3 月应至少调仓 3 次");
         assertTrue(r.metrics().maxDrawdown() >= 0);
         assertTrue(r.metrics().tradingDays() > 50);
+    }
+
+    @Test
+    void 首次调仓应真实建仓_不能因为手续费差一点就整仓跳过() {
+        MarketData data = market(Map.of("600001", seriesSkipping(10.0, 0.001, null)));
+        BacktestResult r = run(data, List.of("600001"), costs());
+
+        assertFalse(r.trades().isEmpty(), "应当有成交");
+        double bought = r.trades().stream()
+                .filter(t -> t.side() == Trade.Side.BUY)
+                .mapToDouble(Trade::amount)
+                .sum();
+        assertTrue(bought > 900_000, "首笔建仓应基本打满 100 万本金，实际 " + bought);
     }
 
     // ---------- 工具 ----------
